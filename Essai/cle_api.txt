@@ -1,1 +1,25 @@
-54B5B2E411F0FC20
+clé api cozy-series : 54B5B2E411F0FC20
+
+récupérer une liste des miroirs:
+    http://thetvdb.com/api/54B5B2E411F0FC20/mirrors.xml
+
+Créer 3 tableaux cmlmirrors, bannermirrors, zipmirrors
+
+récupérer http://thetvdb.com/api/Updates.php?type=none
+
+
+récupérer http://thetvdb.com/api/GetSeries.php?seriesname=<Nom de la série>
+
+pour récupérer les informations sur une série :
+    <mirrorpath_zip>/api/54B5B2E411F0FC20/series/<ID de la serie>/all/english.zip
+    et extraire english.xml et banners.xml
+
+à partir de la, processer le english.xml pour récupérer les infos
+
+Regarder CouchPotato pour la barre de recherche
+
+
+Pour les updates des séries:
+    http://thetvdb.com/api/Updates.php?type=all&time=<temps de la dernière mise à jour>
+
+    faire pareil que pour la récupération initiale pour les changements ou les nouveaux épisodes
