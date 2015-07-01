@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # [Cozy](http://cozy.io) Calendar
 
 Cozy Calendar makes your event management easy. Main features are: 
@@ -93,3 +94,6 @@ You can reach the Cozy Community by:
 * Posting issues on the [Github repos](https://github.com/cozy/)
 * Mentioning us on [Twitter](http://twitter.com/mycozycloud)
 
+=======
+# cozy-series
+>>>>>>> 686aa75a0ebb1e1526c4084cd77372c325adec9e
