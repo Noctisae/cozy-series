@@ -13,6 +13,12 @@ var serie = "http://thetvdb.com/api/GetSeries.php?seriesname=Game Of Thrones";
 
 var base_information = "http://thetvdb.com/api/54B5B2E411F0FC20/series/121361/all";
 
+// URL pour récupérer les banières
+// var banieres = "http://thetvdb.com/api/54B5B2E411F0FC20/series/121361/banners.xml"
+
+//URL pour une banière
+//var image = "http://thetvdb.com/banners/"+bannerPath récupéré dans le fichier banière.xml
+
 var DOWNLOAD_DIR = "download/";
 
 var mkdir = 'mkdir download';
