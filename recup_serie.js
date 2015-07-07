@@ -45,8 +45,8 @@ var download_httpget = function(file_url){
         res.on('end', function(){
             downloaded_file.write(buff.toString('utf8'));
             xml(buff.toString('utf8'),function(err,result){
-                console.dir(result);
-            })
+                console.log(JSON.stringify(result));
+            });
             downloaded_file.end();
         });
 
