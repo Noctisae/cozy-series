@@ -1,0 +1,17 @@
+Fichier présentant la transformation d'un fichier xml d'une série récupérée en XML en event cozy
+
+Option XML     ==>    Option event Cozy
+
+ ==> start
+ ==> end
+ ==> place
+ ==> details
+Overview ==> Description
+ ==> rrule
+ ==> tags
+ ==> attendees
+ ==> related
+ ==> timezone
+ ==> alarms
+ ==> created
+ ==> lastModification

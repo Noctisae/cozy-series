@@ -8,6 +8,7 @@
   },
   "main": "server.js",
   "dependencies": {
+    "body-parser": "^1.13.1",
     "express": "~3.4.0",
     "jade": "~0.35.0",
     "sqlite3": "~2.1.17"
