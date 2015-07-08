@@ -108,7 +108,9 @@ var download_all = function(file_url){
                                                    var EpisodeName = (((result[Data])[series])[id])[temp];
                                                }
                                            }
+                                           //On crée ici la chaine de caractères JSON contenant les attributs récupérés dans l'épisode XML, on crée l'objet JSON correspondant puis on recommence ainsi pour chaque épisode
                                            var json = JSON.stringify({"start" : start,"end" : end, "place" : place, "details" : "Episode numéro "+ EpisodeNumber + " de la saison "+EpisodeSeason+", nommé "+EpisodeName, "description" : description, "rrule" : "", "tags" : "", "attendees" : "", "related" : "", "timezone" : timezone, "alarms" : {}, "created" : "", "lastModification" : lastModification});
+                                           json = JSON.parse(json);
                                            console.log(json);
                                        }
                                    }
