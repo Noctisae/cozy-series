@@ -5,7 +5,9 @@ var http = require('http'),
     url = require('url'),
     exec = require('child_process').exec,
     spawn = require("child_process").spawn,
-    xml2js = require('xml2js');
+    xml2js = require('xml2js'),
+    async = require('async'),
+    Event = require('./build/server/models/event');
 
 var mirror_url = "http://thetvdb.com/api/54B5B2E411F0FC20/mirrors.xml";
 var server_time = "http://thetvdb.com/api/Updates.php?type=none";
@@ -54,10 +56,11 @@ var download_all = function(file_url){
                    var parser = new xml2js.Parser();
                    fs.readFile(filePath, function(err,data){
                        if (err) throw err;
-                       parser.parseString(data, function (err, result) {
+                       parser.parseString(data, function (err, result){
                            //On va descendre dans l'arborescence du fichier XML et récupérer les informations pour chaque épisode
                            //Chaque nouvelle boucle correspond à une descente d'un niveau dans l'arborescence du fichier XML
                            //Data représente le premier niveau du fichier XML, à savoir <Data></Data> qui englobe le reste
+                           var rawEvents=[];
                            for(var Data in result){
                                //series représente le deuxième niveau, Séries et Episodes
                                for(var series in result[Data]){
@@ -77,7 +80,6 @@ var download_all = function(file_url){
                                            var rrule = "";
                                            var tags = "";
                                            var docType = "";
-                                           var timezone = "Europe/Paris";
                                            var created = "";
                                            //On récupére ici tout les attributs de l'episode, à savoir ID, dates, numéro de l'épisode, description, etc...
                                            for(var temp in (((result[Data])[series])[id])){
@@ -97,7 +99,7 @@ var download_all = function(file_url){
                                                    var hour = date.getHours();
                                                    var min = date.getMinutes();
                                                    var sec = date.getSeconds();
-                                                   var lastModification = today = new Date().toISOString();
+                                                   var lastModification  = new Date().toISOString();
                                                }
                                                else if (temp == 'Combined_episodenumber') {
                                                    var EpisodeNumber = (((result[Data])[series])[id])[temp];
@@ -110,13 +112,19 @@ var download_all = function(file_url){
                                                }
                                            }
                                            //On crée ici la chaine de caractères JSON contenant les attributs récupérés dans l'épisode XML, on crée l'objet JSON correspondant puis on recommence ainsi pour chaque épisode
-                                           var json = JSON.stringify({"start" : start,"end" : end, "place" : place, "details" : details, "description" : "Episode numéro "+ EpisodeNumber + " de la saison "+EpisodeSeason+", nommé "+EpisodeName, "rrule" : "", "tags" : "", "attendees" : "", "related" : "", "timezone" : "", "alarms" : {}, "created" : "", "lastModification" : lastModification, "docType" : docType});
-                                           json = JSON.parse(json);
-                                           console.log(json);
+                                           var rawEvent = {"start" : start,"end" : end, "place" : place, "details" : details, "description" : "Episode numéro "+ EpisodeNumber + " de la saison "+EpisodeSeason+", nommé "+EpisodeName, "tags" : ["default calendar"], "alarms" : {}, "created" : lastModification, "lastModification" : lastModification};
+                                           rawEvents.push(rawEvent);
+                                           //console.log(rawEvent);
                                        }
                                    }
                                }
                            }
+                           console.log(Event.create);
+                           var processor = function(rawEvent, next) {
+                               Event.create(rawEvent,next);
+                           }
+                           async.eachSeries(rawEvents,processor,function(err){console.log('events created');});
+
                        });
                    });
             }

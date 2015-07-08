@@ -20,7 +20,10 @@ lastModification ==> format ISO String de création de l'évènement
 docType ==> rien
 
 
+découper en sous-fonctions la grosse fonction XMLLoad
 
 librairie async
 
 model d'évènements event
+
+librairie superagent ==> npm install superagent
