@@ -47,6 +47,7 @@ var download_all = function(file_url){
             //    console.log(JSON.stringify(result));
             //});
             downloaded_file.end();
+            //On prend le fichier téléchargé et on le convertit directement en objets JSON
             var rawJSON = loadXMLDoc(DOWNLOAD_DIR + file_name + extension);
             function loadXMLDoc(filePath) {
             try {
@@ -54,14 +55,18 @@ var download_all = function(file_url){
                    fs.readFile(filePath, function(err,data){
                        if (err) throw err;
                        parser.parseString(data, function (err, result) {
-                           //ID représente Data ici
+                           //On va descendre dans l'arborescence du fichier XML et récupérer les informations pour chaque épisode
+                           //Chaque nouvelle boucle correspond à une descente d'un niveau dans l'arborescence du fichier XML
+                           //Data représente le premier niveau du fichier XML, à savoir <Data></Data> qui englobe le reste
                            for(var Data in result){
-                               //ID2 représente le deuxième niveau, Séries et Episodes
+                               //series représente le deuxième niveau, Séries et Episodes
                                for(var series in result[Data]){
                                    if (series=='Episode'){
+                                       //Pour chaque Episode, on récupére les attributs
                                        for(var id in (result[Data])[series]){
+                                           //on initialise les variables pour chaque episode
                                            var start = "test";
-                                           var end = "penis";
+                                           var end = "azerty";
                                            var description = "yolo";
                                            var lastModification = "swag";
                                            var EpisodeNumber = "0";
@@ -73,7 +78,7 @@ var download_all = function(file_url){
                                            var tags = "";
                                            var timezone = "Europe/Paris";
                                            var created = "yes";
-
+                                           //On récupére ici tout les attributs de l'episode, à savoir ID, dates, numéro de l'épisode, description, etc...
                                            for(var temp in (((result[Data])[series])[id])){
                                                if(temp == 'FirstAired'){
                                                    var start = (((result[Data])[series])[id])[temp];
