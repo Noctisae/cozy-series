@@ -21,9 +21,8 @@ docType ==> rien
 
 
 découper en sous-fonctions la grosse fonction XMLLoad
+BIEN DECOUPER EN SOUS FONCTIONS L'ALGO
 
-librairie async
+UTILISER la librairie superagent ==> npm install superagent
 
-model d'évènements event
-
-librairie superagent ==> npm install superagent
+METTRE EN PLACE CREATION OU UPDATE des episodes, s'il y a modification à effectuer ou non

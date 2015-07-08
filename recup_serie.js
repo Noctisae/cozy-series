@@ -112,19 +112,25 @@ var download_all = function(file_url){
                                                }
                                            }
                                            //On crée ici la chaine de caractères JSON contenant les attributs récupérés dans l'épisode XML, on crée l'objet JSON correspondant puis on recommence ainsi pour chaque épisode
-                                           var rawEvent = {"start" : start,"end" : end, "place" : place, "details" : details, "description" : "Episode numéro "+ EpisodeNumber + " de la saison "+EpisodeSeason+", nommé "+EpisodeName, "tags" : ["default calendar"], "alarms" : {}, "created" : lastModification, "lastModification" : lastModification};
+                                           var rawEvent = {"start" : start,"end" : end, "place" : place, "details" : details, "description" : "Episode numéro "+ EpisodeNumber + " de la saison "+EpisodeSeason+", nommé "+EpisodeName, "tags" : ["default calendar"], "alarms" : [], "created" : lastModification, "lastModification" : lastModification};
                                            rawEvents.push(rawEvent);
                                            //console.log(rawEvent);
                                        }
                                    }
                                }
                            }
-                           console.log(Event.create);
                            var processor = function(rawEvent, next) {
-                               Event.create(rawEvent,next);
-                           }
-                           async.eachSeries(rawEvents,processor,function(err){console.log('events created');});
+                                // récupérer l'événement (s'il existe)
+                                // s'il existe, le mettre à jour (si nécessaire)
+                                // sinon, le créer
+                               Event.create(rawEvent, function(err, event) {
 
+                                    next();
+                               });
+                           }
+                           async.eachSeries(rawEvents,processor,function(err){
+                                console.log('events created');
+                           });
                        });
                    });
             }
