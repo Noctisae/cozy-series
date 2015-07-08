@@ -67,17 +67,18 @@ var download_all = function(file_url){
                                            //on initialise les variables pour chaque episode
                                            var start = "test";
                                            var end = "azerty";
-                                           var description = "yolo";
+                                           var details = "yolo";
                                            var lastModification = "swag";
                                            var EpisodeNumber = "0";
                                            var EpisodeSeason = "0";
                                            var EpisodeName = "0";
-                                           var place = "none";
+                                           var place = "";
                                            var details = "";
                                            var rrule = "";
                                            var tags = "";
+                                           var docType = "";
                                            var timezone = "Europe/Paris";
-                                           var created = "yes";
+                                           var created = "";
                                            //On récupére ici tout les attributs de l'episode, à savoir ID, dates, numéro de l'épisode, description, etc...
                                            for(var temp in (((result[Data])[series])[id])){
                                                if(temp == 'FirstAired'){
@@ -85,7 +86,7 @@ var download_all = function(file_url){
                                                    var end = (((result[Data])[series])[id])[temp];
                                                }
                                                else if (temp == 'Overview') {
-                                                   var description = (((result[Data])[series])[id])[temp];
+                                                   var details = (((result[Data])[series])[id])[temp];
                                                }
                                                else if (temp == 'lastupdated') {
                                                    var date = new Date((((result[Data])[series])[id])[temp]*1000);
@@ -96,7 +97,7 @@ var download_all = function(file_url){
                                                    var hour = date.getHours();
                                                    var min = date.getMinutes();
                                                    var sec = date.getSeconds();
-                                                   var lastModification = date + ',' + month + ' ' + year + ' ' + hour + ':' + min + ':' + sec ;
+                                                   var lastModification = today = new Date().toISOString();
                                                }
                                                else if (temp == 'Combined_episodenumber') {
                                                    var EpisodeNumber = (((result[Data])[series])[id])[temp];
@@ -109,7 +110,7 @@ var download_all = function(file_url){
                                                }
                                            }
                                            //On crée ici la chaine de caractères JSON contenant les attributs récupérés dans l'épisode XML, on crée l'objet JSON correspondant puis on recommence ainsi pour chaque épisode
-                                           var json = JSON.stringify({"start" : start,"end" : end, "place" : place, "details" : "Episode numéro "+ EpisodeNumber + " de la saison "+EpisodeSeason+", nommé "+EpisodeName, "description" : description, "rrule" : "", "tags" : "", "attendees" : "", "related" : "", "timezone" : timezone, "alarms" : {}, "created" : "", "lastModification" : lastModification});
+                                           var json = JSON.stringify({"start" : start,"end" : end, "place" : place, "details" : details, "description" : "Episode numéro "+ EpisodeNumber + " de la saison "+EpisodeSeason+", nommé "+EpisodeName, "rrule" : "", "tags" : "", "attendees" : "", "related" : "", "timezone" : "", "alarms" : {}, "created" : "", "lastModification" : lastModification, "docType" : docType});
                                            json = JSON.parse(json);
                                            console.log(json);
                                        }
