@@ -622,7 +622,7 @@ module.exports = RealEventGeneratorCollection = (function(_super) {
   };
 
   RealEventGeneratorCollection.prototype.loadNextPage = function(callback) {
-    var end, eventsInRange, i, item, noEventsRemaining, start;
+    var end, eventsInRange, i, item, multipleDaysEvents, noEventsRemaining, start;
     callback = callback || function() {};
     eventsInRange = [];
     start = this.lastDate.clone();
@@ -630,6 +630,7 @@ module.exports = RealEventGeneratorCollection = (function(_super) {
     end = this.lastDate.clone();
     i = this.baseCollection.indexOf(this.lastGeneratedEvent);
     this.lastGeneratedEvent = null;
+    multipleDaysEvents = [];
     if (i !== -1) {
       while (i < this.baseCollection.length && this.lastGeneratedEvent === null) {
         item = this.baseCollection.at(i);
@@ -638,8 +639,12 @@ module.exports = RealEventGeneratorCollection = (function(_super) {
           continue;
         } else if (item.isRecurrent()) {
           this.runningRecurringEvents.push(item);
+        } else if (item.isMultipleDays()) {
+          multipleDaysEvents.push(item);
         } else {
-          eventsInRange.push(new RealEvent(item));
+          eventsInRange.push(new RealEvent({
+            event: item
+          }));
         }
       }
     }
@@ -647,7 +652,13 @@ module.exports = RealEventGeneratorCollection = (function(_super) {
       return function(item, index) {
         var evs;
         evs = item.generateRecurrentInstancesBetween(start, end, function(event, instanceStart, instanceEnd) {
-          return new RealEvent(event, instanceStart, instanceEnd);
+          var options;
+          options = {
+            event: event,
+            start: instanceStart,
+            end: instanceEnd
+          };
+          return new RealEvent(options);
         });
         eventsInRange = eventsInRange.concat(evs);
         if (item.getLastOccurenceDate().isBefore(end)) {
@@ -655,6 +666,17 @@ module.exports = RealEventGeneratorCollection = (function(_super) {
         }
       };
     })(this));
+    multipleDaysEvents.forEach(function(item, index) {
+      var fakeEvents;
+      fakeEvents = item.generateMultipleDaysEvents().map(function(rawEvent) {
+        var options;
+        options = _.extend(rawEvent, {
+          event: item
+        });
+        return new RealEvent(options);
+      });
+      return eventsInRange = eventsInRange.concat(fakeEvents);
+    });
     this.add(eventsInRange);
     noEventsRemaining = this.runningRecurringEvents.length === 0 && this.lastGeneratedEvent === null;
     return callback(noEventsRemaining);
@@ -1368,7 +1390,8 @@ module.exports = function(router) {
         var view;
         view = router.mainView;
         if (view.cal != null) {
-          view.cal.fullCalendar('render');
+          view.cal.fullCalendar('destroy');
+          view.afterRender();
         }
         return waitToChangeToday();
       }, nextTick);
@@ -2493,17 +2516,20 @@ var RealEvent,
 module.exports = RealEvent = (function(_super) {
   __extends(RealEvent, _super);
 
-  function RealEvent(event, start, end) {
+  function RealEvent(options) {
     RealEvent.__super__.constructor.apply(this, arguments);
-    this.event = event;
-    if (event.isRecurrent()) {
-      this.start = start;
-      this.end = end;
-      this.set('id', event.get('id') + start.toISOString());
+    this.event = options.event;
+    this.start = options.start;
+    this.end = options.start;
+    this.counter = options.counter;
+    if (this.event.isRecurrent()) {
+      this.set('id', this.event.get('id') + this.start.toISOString());
+    } else if (this.event.isMultipleDays()) {
+      this.set('id', "" + (this.event.get('id')) + " " + this.start);
     } else {
-      this.set('id', event.get('id'));
-      this.start = event.getStartDateObject();
-      this.end = event.getEndDateObject();
+      this.set('id', this.event.get('id'));
+      this.start = this.event.getStartDateObject();
+      this.end = this.event.getEndDateObject();
     }
   }
 
@@ -2520,7 +2546,7 @@ module.exports = RealEvent = (function(_super) {
   };
 
   RealEvent.prototype.isAllDay = function() {
-    return this.event.isAllDay();
+    return this.event.isAllDay() || this.event.isMultipleDays();
   };
 
   RealEvent.prototype.getFormattedStartDate = function(format) {
@@ -2619,6 +2645,14 @@ module.exports = ScheduleItem = (function(_super) {
     var endDate;
     endDate = this.isAllDay() ? this.getEndDateObject().add(-1, 'd') : this.getEndDateObject();
     return endDate.isSame(this.getStartDateObject(), 'day');
+  };
+
+  ScheduleItem.prototype.isMultipleDays = function() {
+    var difference, endDate, startDate;
+    startDate = this.getStartDateObject();
+    endDate = this.getEndDateObject();
+    difference = endDate.diff(startDate, 'days', true);
+    return difference > 1;
   };
 
   ScheduleItem.prototype._toDateObject = function(modelDateStr) {
@@ -2780,6 +2814,32 @@ module.exports = ScheduleItem = (function(_super) {
     }
   };
 
+  ScheduleItem.prototype.generateMultipleDaysEvents = function() {
+    var date, difference, endDate, fakeEvent, fakeEvents, i, startDate, _i;
+    if (!this.isMultipleDays()) {
+      return [this];
+    } else {
+      startDate = this.getStartDateObject();
+      endDate = this.getEndDateObject();
+      difference = endDate.diff(startDate, 'days');
+      fakeEvents = [];
+      for (i = _i = 0; _i <= difference; i = _i += 1) {
+        fakeEvent = _.clone(this.attributes);
+        date = moment(startDate).add(i, 'days');
+        fakeEvent = {
+          start: date,
+          end: date,
+          counter: {
+            current: i + 1,
+            total: difference + 1
+          }
+        };
+        fakeEvents.push(fakeEvent);
+      }
+      return fakeEvents;
+    }
+  };
+
   ScheduleItem.prototype.toPunctualFullCalendarEvent = function() {
     return this._toFullCalendarEvent(this.getStartDateObject(), this.getEndDateObject());
   };
@@ -2878,7 +2938,7 @@ module.exports = Tag = (function(_super) {
 });
 
 ;require.register("router", function(exports, require, module) {
-var CalendarView, DayBucketCollection, EventModal, ImportView, ListView, Router, SettingsModal, SyncView, app,
+var CalendarView, DayBucketCollection, EventModal, ImportView, ListView, Router, SettingsModal, app,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -2894,8 +2954,6 @@ EventModal = require('views/event_modal');
 SettingsModal = require('views/settings_modal');
 
 ImportView = require('views/import_view');
-
-SyncView = require('views/sync_view');
 
 DayBucketCollection = require('collections/daybuckets');
 
@@ -2922,7 +2980,6 @@ module.exports = Router = (function(_super) {
     'month/:year/:month/:eventid': 'month_event',
     'week/:year/:month/:day/:eventid': 'week_event',
     'list/:eventid': 'list_event',
-    'sync': 'sync',
     'calendar': 'backToCalendar',
     'settings': 'settings'
   };
@@ -2979,12 +3036,6 @@ module.exports = Router = (function(_super) {
     }));
     app.menu.activate('calendar');
     return this.onCalendar = true;
-  };
-
-  Router.prototype.sync = function() {
-    this.displayView(new SyncView);
-    app.menu.activate('sync');
-    return this.onCalendar = false;
   };
 
   Router.prototype.auto_event = function(id) {
@@ -3921,8 +3972,13 @@ module.exports = CalendarView = (function(_super) {
     }
     $displayedElement = $element.find('.fc-title');
     titleAndTime = $displayedElement.html();
-    _ref = titleAndTime.split(' '), time = _ref[0], title = 2 <= _ref.length ? __slice.call(_ref, 1) : [];
-    title = title.join(' ');
+    if (event.allDay) {
+      time = '';
+      title = titleAndTime;
+    } else {
+      _ref = titleAndTime.split(' '), time = _ref[0], title = 2 <= _ref.length ? __slice.call(_ref, 1) : [];
+      title = title.join(' ');
+    }
     $element.find('.fc-time').html(time);
     $element.find('.fc-title').html(title);
     $element.attr('title', event.title);
@@ -5339,7 +5395,8 @@ module.exports = EventItemView = (function(_super) {
       start: this.model.getFormattedStartDate('HH:mm'),
       end: this.model.getFormattedEndDate('HH:mm'),
       allDay: this.model.isAllDay(),
-      color: this.model.getColor()
+      color: this.model.getColor(),
+      counter: this.model.counter
     });
     return data;
   };
@@ -5648,9 +5705,10 @@ module.exports = MenuItemView = (function(_super) {
   };
 
   MenuItemView.prototype.onExportCalendar = function() {
-    var calendarName;
+    var calendarName, encodedName;
     calendarName = this.model.get('name');
-    return window.location = "export/" + calendarName + ".ics";
+    encodedName = encodeURIComponent(calendarName);
+    return window.location = "export/" + encodedName + ".ics";
   };
 
   MenuItemView.prototype.buildBadge = function(color) {
@@ -5759,10 +5817,11 @@ module.exports = SettingsModals = (function(_super) {
   };
 
   SettingsModals.prototype.exportCalendar = function() {
-    var calendarId;
+    var calendarId, encodedName;
     calendarId = this.calendar.value();
     if (__indexOf.call(app.calendars.toArray(), calendarId) >= 0) {
-      return window.location = "export/" + calendarId + ".ics";
+      encodedName = encodeURIComponent(calendarId);
+      return window.location = "export/" + encodedName + ".ics";
     } else {
       return alert(t('please select existing calendar'));
     }
@@ -5790,92 +5849,6 @@ module.exports = SettingsModals = (function(_super) {
   };
 
   return SettingsModals;
-
-})(BaseView);
-});
-
-;require.register("views/sync_view", function(exports, require, module) {
-var BaseView, ComboBox, ImportView, SyncView,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-  __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
-
-BaseView = require('../lib/base_view');
-
-ImportView = require('./import_view');
-
-ComboBox = require('./widgets/combobox');
-
-module.exports = SyncView = (function(_super) {
-  __extends(SyncView, _super);
-
-  function SyncView() {
-    return SyncView.__super__.constructor.apply(this, arguments);
-  }
-
-  SyncView.prototype.id = 'view-container';
-
-  SyncView.prototype.template = require('./templates/sync_view');
-
-  SyncView.prototype.events = {
-    'click a#export': 'exportCalendar',
-    'click #show-password': 'showPassword',
-    'click #hide-password': 'hidePassword'
-  };
-
-  SyncView.prototype.getRenderData = function() {
-    return {
-      account: this.model
-    };
-  };
-
-  SyncView.prototype.initialize = function() {
-    this.model = window.webDavAccount;
-    if (this.model != null) {
-      return this.model.placeholder = this.getPlaceholder(this.model.token);
-    }
-  };
-
-  SyncView.prototype.afterRender = function() {
-    this.calendar = new ComboBox({
-      el: this.$('#export-calendar'),
-      source: app.calendars.toAutoCompleteSource()
-    });
-    return this.$('#importviewplaceholder').append(new ImportView().render().$el);
-  };
-
-  SyncView.prototype.exportCalendar = function() {
-    var calendarId;
-    calendarId = this.calendar.value();
-    if (__indexOf.call(app.calendars.toArray(), calendarId) >= 0) {
-      return window.location = "export/" + calendarId + ".ics";
-    } else {
-      return alert(t('please select existing calendar'));
-    }
-  };
-
-  SyncView.prototype.getPlaceholder = function(password) {
-    var i, placeholder, _i, _ref;
-    placeholder = [];
-    for (i = _i = 1, _ref = password.length; _i <= _ref; i = _i += 1) {
-      placeholder.push('*');
-    }
-    return placeholder.join('');
-  };
-
-  SyncView.prototype.showPassword = function() {
-    this.$('#placeholder').html(this.model.token);
-    this.$('#show-password').hide();
-    return this.$('#hide-password').show();
-  };
-
-  SyncView.prototype.hidePassword = function() {
-    this.$('#placeholder').html(this.model.placeholder);
-    this.$('#hide-password').hide();
-    return this.$('#show-password').show();
-  };
-
-  return SyncView;
 
 })(BaseView);
 });
@@ -6075,7 +6048,12 @@ var buf = [];
 var jade_mixins = {};
 var jade_interp;
 var locals_ = (locals || {}),start = locals_.start,end = locals_.end,description = locals_.description,place = locals_.place;
-buf.push("<p>" + (jade.escape((jade_interp = start) == null ? '' : jade_interp)) + " - " + (jade.escape((jade_interp = end) == null ? '' : jade_interp)) + "\n" + (jade.escape((jade_interp = description) == null ? '' : jade_interp)) + " (" + (jade.escape((jade_interp = place) == null ? '' : jade_interp)) + ")</p>");;return buf.join("");
+buf.push("<p>" + (jade.escape((jade_interp = start) == null ? '' : jade_interp)) + " - " + (jade.escape((jade_interp = end) == null ? '' : jade_interp)) + "\n" + (jade.escape((jade_interp = description) == null ? '' : jade_interp)) + " ");
+if (place != void(0) && place != null && place.length > 0)
+{
+buf.push("(" + (jade.escape((jade_interp = place) == null ? '' : jade_interp)) + ")");
+}
+buf.push("</p>");;return buf.join("");
 };
 if (typeof define === 'function' && define.amd) {
   define([], function() {
@@ -6150,16 +6128,21 @@ var __templateData = function template(locals) {
 var buf = [];
 var jade_mixins = {};
 var jade_interp;
-var locals_ = (locals || {}),allDay = locals_.allDay,color = locals_.color,start = locals_.start,end = locals_.end,description = locals_.description;
+var locals_ = (locals || {}),allDay = locals_.allDay,color = locals_.color,start = locals_.start,end = locals_.end,description = locals_.description,counter = locals_.counter;
 if ( !allDay)
 {
 buf.push("<div" + (jade.attr("style", "background-color:"+color+";", true, false)) + " class=\"fc-time\">" + (jade.escape((jade_interp = start) == null ? '' : jade_interp)) + " - " + (jade.escape((jade_interp = end) == null ? '' : jade_interp)) + "</div>");
 }
 else
 {
-buf.push("<div" + (jade.attr("style", "background-color:"+color+";", true, false)) + " class=\"fc-time\">All Day</div>");
+buf.push("<div" + (jade.attr("style", "background-color:"+color+";", true, false)) + " class=\"fc-time\">" + (jade.escape((jade_interp = t("All day")) == null ? '' : jade_interp)) + "</div>");
 }
-buf.push("<div class=\"fc-title\">" + (jade.escape((jade_interp = description || t("no description")) == null ? '' : jade_interp)) + "</div><i class=\"delete fa fa-trash\"></i>");;return buf.join("");
+buf.push("<div class=\"fc-title\">" + (jade.escape((jade_interp = description || t("no description")) == null ? '' : jade_interp)) + "");
+if(counter != void(0) && counter != null)
+{
+buf.push("&nbsp;(" + (jade.escape((jade_interp = counter.current) == null ? '' : jade_interp)) + " / " + (jade.escape((jade_interp = counter.total) == null ? '' : jade_interp)) + ")");
+}
+buf.push("</div><i class=\"delete fa fa-trash\"></i>");;return buf.join("");
 };
 if (typeof define === 'function' && define.amd) {
   define([], function() {
@@ -6291,34 +6274,6 @@ else
 buf.push("<p>" + (jade.escape(null == (jade_interp = t('sync headline with data')) ? "" : jade_interp)) + "</p><ul><li>" + (jade.escape((jade_interp = t('sync url')) == null ? '' : jade_interp)) + " https://" + (jade.escape((jade_interp = account.domain) == null ? '' : jade_interp)) + "/public/sync/principals/me</li><li>" + (jade.escape((jade_interp = t('sync login')) == null ? '' : jade_interp)) + " " + (jade.escape((jade_interp = account.login) == null ? '' : jade_interp)) + "</li><li>" + (jade.escape((jade_interp = t('sync password') + " ") == null ? '' : jade_interp)) + "<span id=\"placeholder\">" + (jade.escape(null == (jade_interp = account.placeholder) ? "" : jade_interp)) + "</span><button id=\"show-password\" class=\"btn\">" + (jade.escape(null == (jade_interp = t('show')) ? "" : jade_interp)) + "</button><button id=\"hide-password\" class=\"btn\">" + (jade.escape(null == (jade_interp = t('hide')) ? "" : jade_interp)) + "</button></li></ul>");
 }
 buf.push("<p>" + (jade.escape(null == (jade_interp = t('sync help') + " ") ? "" : jade_interp)) + "<a href=\"https://cozy.io/mobile/calendar.html\" target=\"_blank\">" + (jade.escape(null == (jade_interp = t('sync help link')) ? "" : jade_interp)) + "</a></p></div><div class=\"helptext\"><span><i class=\"fa fa-upload\"></i></span><h3>" + (jade.escape(null == (jade_interp = t('icalendar export')) ? "" : jade_interp)) + "</h3><p>" + (jade.escape(null == (jade_interp = t('download a copy of your calendar')) ? "" : jade_interp)) + "</p><p class=\"line\"><span class=\"surrounded-combobox\"><input id=\"export-calendar\"" + (jade.attr("value", calendar, true, false)) + "/></span><span>&nbsp;</span><a id=\"export\" class=\"btn\">" + (jade.escape(null == (jade_interp = t('export your calendar')) ? "" : jade_interp)) + "</a></p></div><div class=\"helptext\"><span><i class=\"fa fa-download\"></i></span><h3>" + (jade.escape(null == (jade_interp = t('icalendar import')) ? "" : jade_interp)) + "</h3><div id=\"importviewplaceholder\"></div></div>");;return buf.join("");
-};
-if (typeof define === 'function' && define.amd) {
-  define([], function() {
-    return __templateData;
-  });
-} else if (typeof module === 'object' && module && module.exports) {
-  module.exports = __templateData;
-} else {
-  __templateData;
-}
-});
-
-;require.register("views/templates/sync_view", function(exports, require, module) {
-var __templateData = function template(locals) {
-var buf = [];
-var jade_mixins = {};
-var jade_interp;
-var locals_ = (locals || {}),account = locals_.account,calendar = locals_.calendar;
-buf.push("<div class=\"helptext\"><h2>" + (jade.escape(null == (jade_interp = t('synchronization')) ? "" : jade_interp)) + "</h2></div><div class=\"helptext\"><h3>" + (jade.escape(null == (jade_interp = t('mobile sync')) ? "" : jade_interp)) + "</h3>");
-if ( account == null)
-{
-buf.push("<p>" + (jade.escape(null == (jade_interp = t('to sync your cal with')) ? "" : jade_interp)) + "</p><ol><li>" + (jade.escape(null == (jade_interp = t('install the sync module')) ? "" : jade_interp)) + "</li><li>" + (jade.escape(null == (jade_interp = t('connect to it and follow')) ? "" : jade_interp)) + "</li></ol>");
-}
-else
-{
-buf.push("<p>" + (jade.escape(null == (jade_interp = t('sync headline with data')) ? "" : jade_interp)) + "</p><ul><li>" + (jade.escape((jade_interp = t('sync url')) == null ? '' : jade_interp)) + " https://" + (jade.escape((jade_interp = account.domain) == null ? '' : jade_interp)) + "/public/sync/principals/me</li><li>" + (jade.escape((jade_interp = t('sync login')) == null ? '' : jade_interp)) + " " + (jade.escape((jade_interp = account.login) == null ? '' : jade_interp)) + "</li><li>" + (jade.escape((jade_interp = t('sync password') + " ") == null ? '' : jade_interp)) + "<span id=\"placeholder\">" + (jade.escape(null == (jade_interp = account.placeholder) ? "" : jade_interp)) + "</span><button id=\"show-password\" class=\"btn\">" + (jade.escape(null == (jade_interp = t('show')) ? "" : jade_interp)) + "</button><button id=\"hide-password\" class=\"btn\">" + (jade.escape(null == (jade_interp = t('hide')) ? "" : jade_interp)) + "</button></li></ul>");
-}
-buf.push("<p>" + (jade.escape(null == (jade_interp = t('sync help') + " ") ? "" : jade_interp)) + "<a href=\"https://cozy.io/mobile/calendar.html\" target=\"_blank\">" + (jade.escape(null == (jade_interp = t('sync help link')) ? "" : jade_interp)) + "</a></p></div><div class=\"helptext\"><h3>" + (jade.escape(null == (jade_interp = t('icalendar export')) ? "" : jade_interp)) + "</h3><p>" + (jade.escape(null == (jade_interp = t('download a copy of your calendar')) ? "" : jade_interp)) + "</p><p class=\"line\"><span class=\"surrounded-combobox\"><input id=\"export-calendar\"" + (jade.attr("value", calendar, true, false)) + "/></span><span>&nbsp;</span><a id=\"export\" class=\"btn\">" + (jade.escape(null == (jade_interp = t('export your calendar')) ? "" : jade_interp)) + "</a></p></div><div class=\"helptext\"><h3>" + (jade.escape(null == (jade_interp = t('icalendar import')) ? "" : jade_interp)) + "</h3><div id=\"importviewplaceholder\"></div></div>");;return buf.join("");
 };
 if (typeof define === 'function' && define.amd) {
   define([], function() {

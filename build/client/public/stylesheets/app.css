@@ -8575,8 +8575,10 @@ textarea:active {
   border-radius: 100%;
 }
 .sidenav ul#menuitems li.tagmenuitem .calendar-name {
+  width: 100%;
   font-size: 1em;
   color: #555;
+  word-break: break-all;
 }
 .sidenav ul#menuitems li.tagmenuitem input.calendar-name {
   width: 100px;
@@ -8686,7 +8688,7 @@ textarea:active {
   margin: 3px;
 }
 .fc-view-container .fc-title {
-  font-style: italic;
+  font-weight: 700;
 }
 .fc-cell-overlay {
   background: #5c5;
@@ -9531,7 +9533,7 @@ body.error-404 .error-frame .headline {
     display: none;
   }
   #list-container {
-    top: 0px;
+    top: 57px;
     margin-bottom: 0;
     padding-bottom: 5em;
   }
