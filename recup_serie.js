@@ -11,22 +11,28 @@ var http = require('http'),
     // var banieres = "http://thetvdb.com/api/54B5B2E411F0FC20/series/121361/banners.xml"
     //URL pour une banière
     //var image = "http://thetvdb.com/banners/"+bannerPath récupéré dans le fichier banière.xml
-
+var serie = process.argv[2];
+var serie_id = "";
+var url_serie = "http://thetvdb.com/api/GetSeries.php?seriesname="+serie;
+var base_information = "";
 //Fonction chargée de lancer la récupération de chaque série passée en paramètres du script, quelque soit
 //le nombre de séries passé en paramètres
 var recup_all_series = function(callback){
     var tableau_dynamique = process.argv;
+    //On ôte les deux premiers arguments, afin de ne récupérer que les séries
     tableau_dynamique.shift();
     tableau_dynamique.shift();
-    for(var series_name in tableau_dynamique){
-        var serie_id = "";
-        var url_serie = "http://thetvdb.com/api/GetSeries.php?seriesname="+series_name;
-        var base_information = "";
-        if(series_name == undefined || series_name == null || series_name == ''){
-            console.log("Paramètre non passé ou tableau vide !");
-        }
-        else{
-            recup_all(url_serie, callback);
+    if(tableau_dynamique.length != 0){
+        for(var series_name in tableau_dynamique){
+            var serie_id = "";
+            var url_serie = "http://thetvdb.com/api/GetSeries.php?seriesname="+series_name;
+            var base_information = "";
+            if(series_name == undefined || series_name == null || series_name == ''){
+                console.log("Paramètre non passé ou tableau vide !");
+            }
+            else{
+                recup_all(url_serie, callback);
+            }
         }
     }
 }
@@ -152,13 +158,18 @@ var recup_episodes_details = function(episodes){
         }
         //On récupère la date de première diffusion
         for(var temp in (episodes[id])["FirstAired"]){
-            var start = ((episodes[id])["FirstAired"])[temp];
+            var start = "";
+            var end = "";
+            start = ((episodes[id])["FirstAired"])[temp];
+            if(start != undefined && start != null && start != ""){
+                //On ajoute a la date de première diffusion 1 jour
+                //pour que l'évènement soit considéré comme prenant la journée entière
+                var date_temporaire = new Date(start);
+                date_temporaire.setDate(date_temporaire.getDate()+1);
+                end = (date_temporaire.toISOString().split('T'))[0];
+
+            }
         }
-        //On ajoute a la date de première diffusion 1000*60*60*24 millisecondes,
-        //soit 24 h pour que l'évènement soit considéré comme prenant la journée entière
-        var date_temporaire = new Date(((episodes[id])["FirstAired"]));
-        date_temporaire.setTime(date_temporaire.getTime()+86400000);
-        var end = (date_temporaire.toISOString().split('T'))[0];
         //On récupère la description de l'épisode
         for(var temp in (episodes[id])["Overview"]){
             var details = ((episodes[id])["Overview"])[temp];
@@ -185,10 +196,17 @@ var recup_episodes_details = function(episodes){
 }
 
 //Début du programme, cette fonction relance le script toutes les 24 h après un premier appel
-var recup_all_series_every_24h = function() {
-    recup_all_series(function() {
-        console.log('terminé');
-        setTimeout(recup_all_series_every_24h, 1000*10);
+var recup_all_every_24h = function() {
+    recup_all(url_serie,function() {
+        console.log('La récupération de la série '+serie+' est terminée !');
+        setTimeout(recup_all_every_24h, 1000*10);
     });
 }
-recup_all_series_every_24h();
+
+var recup_all_series_every_24h = function() {
+    recup_all_series(function() {
+        console.log('La récupération de toutes les séries est terminée');
+        setTimeout(recup_all_series_every_24h, 1000*30);
+    });
+}
+recup_all_every_24h();
