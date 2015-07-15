@@ -6,11 +6,15 @@ var http = require('http'),
     superagent = require('superagent'),
     Event = require('./build/server/models/event');
 
-var mirror_url = "http://thetvdb.com/api/54B5B2E411F0FC20/mirrors.xml";
-var server_time = "http://thetvdb.com/api/Updates.php?type=none";
-var serie = "http://thetvdb.com/api/GetSeries.php?seriesname=Game Of Thrones";
+var serie = "Game of Thrones";
 
-var base_information = "http://thetvdb.com/api/54B5B2E411F0FC20/series/121361/all";
+var serie_id = "";
+
+var server_time = "http://thetvdb.com/api/Updates.php?type=none";
+
+var url_serie = "http://thetvdb.com/api/GetSeries.php?seriesname="+serie;
+
+var base_information = "";
 // URL pour vérifier la création des évènements : http://localhost:5984/_utils/database.html?cozy/_all_docs
 // URL pour récupérer les banières
 // var banieres = "http://thetvdb.com/api/54B5B2E411F0FC20/series/121361/banners.xml"
@@ -18,50 +22,77 @@ var base_information = "http://thetvdb.com/api/54B5B2E411F0FC20/series/121361/al
 //URL pour une banière
 //var image = "http://thetvdb.com/banners/"+bannerPath récupéré dans le fichier banière.xml
 
-var download_all = function(file_url){
-    var request = superagent.get(file_url);
+var recup_all = function(url){
+    var request = superagent.get(url);
     request.buffer();
     request.type('xml');
     request.end(function(err,res) {
-        if (res.ok) {
-            var parser = new xml2js.Parser();
-            parser.parseString(res.text, function (err, result){
-            //On va descendre dans l'arborescence du fichier XML et récupérer les informations pour chaque épisode
-            //Chaque nouvelle boucle correspond à une descente d'un niveau dans l'arborescence du fichier XML
-            //Data représente le premier niveau du fichier XML, à savoir <Data></Data> qui englobe le reste
-            var episodes = recup_episodes(result);
-            var episodes_details = recup_details(episodes);
-            var processor = function(rawEvent, next) {
-            // récupérer l'événement (s'il existe)
-            // s'il existe, le mettre à jour (si nécessaire)
-            // sinon, le créer
-                Event.find(rawEvent['_id'], function(err, event) {
-                    if (err || !event) {
-                        Event.create(rawEvent, function(err, event) {
-                            next();
-                        });
-                    } else {
-                        if(event['lastModification'] != rawEvent['lastModification']){
-                            rawEvent['created'] = event['created'];
-                            event.updateAttributes(rawEvent,function(err,event){
-                                next();
-                            });
-                        }
-                    }
-                });
+        if(res.ok){
+            if (url.indexOf("http://thetvdb.com/api/GetSeries.php") > -1){
+                recup_serie_id(res);
             }
-            async.eachSeries(episodes_details,processor,function(err){
-                console.log('events created');
-            });
-       });
-       }
-   else{
-                  alert('Oh no! error ' + res.text);
-              }
-   });
+            else if(url.indexOf("http://thetvdb.com/api/54B5B2E411F0FC20/series") > -1){
+                recup_episodes(res);
+            }
+        }
+    });
 }
 
-var recup_episodes = function(result){
+var recup_serie_id = function(res){
+    var parser = new xml2js.Parser();
+    parser.parseString(res.text, function (err, result){
+        for(var Data in result){
+           //series représente le deuxième niveau, Séries et Episodes
+           for(var series in result[Data]){
+               if (series=='Series'){
+                   for(var temp in (result[Data])[series]){
+                       for(var temporary in (((result[Data])[series])[temp])['seriesid']){
+                           //console.log(((((result[Data])[series])[temp])['id'])[temporary]);
+                           serie_id = ((((result[Data])[series])[temp])['seriesid'])[temporary];
+                           base_information = "http://thetvdb.com/api/54B5B2E411F0FC20/series/"+serie_id+"/all";
+                           recup_all(base_information);
+                       }
+                   }
+               }
+           }
+        }
+    });
+}
+
+var recup_episodes = function(res){
+    var parser = new xml2js.Parser();
+    parser.parseString(res.text, function (err, result){
+    //On va descendre dans l'arborescence du fichier XML et récupérer les informations pour chaque épisode
+    //Chaque nouvelle boucle correspond à une descente d'un niveau dans l'arborescence du fichier XML
+    //Data représente le premier niveau du fichier XML, à savoir <Data></Data> qui englobe le reste
+    var episodes = recup_episodes_tableau(result);
+    var episodes_details = recup_episodes_details(episodes);
+    var processor = function(rawEvent, next) {
+    // récupérer l'événement (s'il existe)
+    // s'il existe, le mettre à jour (si nécessaire)
+    // sinon, le créer
+        Event.find(rawEvent['_id'], function(err, event) {
+            if (err || !event) {
+                Event.create(rawEvent, function(err, event) {
+                    next();
+                });
+            } else {
+                if(event['lastModification'] != rawEvent['lastModification']){
+                    rawEvent['created'] = event['created'];
+                    event.updateAttributes(rawEvent,function(err,event){
+                        next();
+                    });
+                }
+            }
+        });
+    }
+    async.eachSeries(episodes_details,processor,function(err){
+        console.log('events created');
+    });
+});
+}
+
+var recup_episodes_tableau = function(result){
     var episodes = [];
     for(var Data in result){
        //series représente le deuxième niveau, Séries et Episodes
@@ -72,11 +103,11 @@ var recup_episodes = function(result){
                }
            }
        }
-   }
-   return episodes;
+    }
+    return episodes;
 }
 
-var recup_details = function(episodes){
+var recup_episodes_details = function(episodes){
     var rawEvents = [];
     //console.log("Objet : "+ episodes);
     for(var id in episodes){
@@ -111,4 +142,4 @@ var recup_details = function(episodes){
     return rawEvents;
 }
 
-download_all(base_information);
+recup_all(url_serie);
