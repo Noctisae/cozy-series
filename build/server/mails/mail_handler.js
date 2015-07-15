@@ -132,9 +132,8 @@ module.exports.sendDeleteNotification = function(event, callback) {
       subjectKey = 'email delete title';
       mailOptions = {
         to: guest.email,
-        subject: localization.t(subjectKey, {
-          description: event.description
-        }),
+        subject: localization.t(subjectKey),
+        description: event.description,
         content: localization.t('email delete content', templateOptions),
         html: htmlTemplate(templateOptions)
       };

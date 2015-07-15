@@ -54,6 +54,10 @@ module.exports = Event = cozydb.getModel('Event', {
   },
   lastModification: {
     type: String
+  },
+  readOnly: {
+  type: String,
+  "default": "0"
   }
 });
 
