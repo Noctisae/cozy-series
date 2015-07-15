@@ -1,10 +1,6 @@
 var http = require('http'),
     sqlite3 = require('sqlite3').verbose(),
     db = new sqlite3.Database('cozy'),
-    fs = require('fs'),
-    url = require('url'),
-    exec = require('child_process').exec,
-    spawn = require("child_process").spawn,
     xml2js = require('xml2js'),
     async = require('async'),
     superagent = require('superagent'),
@@ -15,7 +11,7 @@ var server_time = "http://thetvdb.com/api/Updates.php?type=none";
 var serie = "http://thetvdb.com/api/GetSeries.php?seriesname=Game Of Thrones";
 
 var base_information = "http://thetvdb.com/api/54B5B2E411F0FC20/series/121361/all";
-
+// URL pour vérifier la création des évènements : http://localhost:5984/_utils/database.html?cozy/_all_docs
 // URL pour récupérer les banières
 // var banieres = "http://thetvdb.com/api/54B5B2E411F0FC20/series/121361/banners.xml"
 
@@ -39,17 +35,23 @@ var download_all = function(file_url){
             // récupérer l'événement (s'il existe)
             // s'il existe, le mettre à jour (si nécessaire)
             // sinon, le créer
-                //if(Event.find()){
-                //    Event.update(rawEvent,function(err,event){
-                //
-                //    });
-                //}
-                //else{
-                    Event.create(rawEvent, function(err, event) {
-                        next();
-                    });
-                //}
-                //next();
+                Event.find(rawEvent['_id'], function(err, event) {
+                    if (err || !event) {
+                        Event.create(rawEvent, function(err, event) {
+                            next();
+                        });
+                    } else {
+                        //console.log(event['lastModification'] + " comparé a " + rawEvent['lastModification']);
+                        if(event['lastModification'] != rawEvent['lastModification']){
+                            rawEvent['created'] = event['created'];
+                            event.updateAttributes(rawEvent,function(err,event){
+                                next();
+                            });
+                            //console.log("Changement ! : "+event['lastModification'] + " comparé a " + rawEvent['lastModification']);
+
+                        }
+                    }
+                });
             }
             async.eachSeries(episodes_details,processor,function(err){
                 console.log('events created');
@@ -81,6 +83,9 @@ var recup_details = function(episodes){
     var rawEvents = [];
     //console.log("Objet : "+ episodes);
     for(var id in episodes){
+        for(var temp in (episodes[id])['id']){
+            var EpisodeID = ((episodes[id])['id'])[temp];
+        }
         //console.log("Attributs : " + episodes[id]);
         //on initialise les variables pour chaque episode
         for(var temp in (episodes[id])["FirstAired"]){
@@ -102,15 +107,8 @@ var recup_details = function(episodes){
         for(var temp in (episodes[id])["EpisodeName"]){
             var EpisodeName = ((episodes[id])["EpisodeName"])[temp];
         }
-        var place = "";
-        var rrule = "";
-        var tags = "";
-        var docType = "";
-        var created = lastModification;
-        //console.log(start+end+details+lastModification);
         //On crée ici la chaine de caractères JSON contenant les attributs récupérés dans l'épisode XML, on crée l'objet JSON correspondant puis on recommence ainsi pour chaque épisode
-        var rawEvent = {"start" : start,"end" : end, "place" : place, "details" : details, "description" : "Episode numéro "+ EpisodeNumber + " de la saison "+EpisodeSeason+", nommé "+EpisodeName, "tags" : ["default calendar"], "alarms" : [], "created" : lastModification, "lastModification" : lastModification};
-        //console.log(rawEvent);
+        var rawEvent = {"_id": EpisodeID,"start" : start,"end" : end, "place" : "", "details" : details, "description" : "Episode numéro "+ EpisodeNumber + " de la saison "+EpisodeSeason+", nommé "+EpisodeName, "tags" : ["default calendar"], "alarms" : [], "created" : lastModification, "lastModification" : lastModification, "readOnly" : "1"};
         rawEvents.push(rawEvent);
     }
     return rawEvents;

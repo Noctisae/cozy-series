@@ -54,6 +54,10 @@ module.exports = Event = cozydb.getModel('Event', {
   },
   lastModification: {
     type: String
+  },
+  readOnly: {
+    type: String,
+    "default": "0"
   }
 });
 
@@ -270,7 +274,8 @@ Event.initializeData = function(callback) {
         place: '',
         tags: [localization.t("new calendar")],
         created: formattedNow,
-        lastModification: formattedNow
+        lastModification: formattedNow,
+        readOnly: "0"
       };
       return Event.create(data, callback);
     } else {

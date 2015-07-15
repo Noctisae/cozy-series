@@ -21,6 +21,7 @@ module.exports = Event = cozydb.getModel 'Event',
     alarms      : type: [Object]
     created     : type: String
     lastModification: type: String
+    readOnly    : type: String, default: "0"
 
 # 'start' and 'end' use those format,
 # According to allDay or rrules.
