@@ -11,30 +11,33 @@ var http = require('http'),
     // var banieres = "http://thetvdb.com/api/54B5B2E411F0FC20/series/121361/banners.xml"
     //URL pour une banière
     //var image = "http://thetvdb.com/banners/"+bannerPath récupéré dans le fichier banière.xml
-var serie = process.argv[2];
-var serie_id = "";
-var url_serie = "http://thetvdb.com/api/GetSeries.php?seriesname="+serie;
-var base_information = "";
+var tab_url_series = [];
 //Fonction chargée de lancer la récupération de chaque série passée en paramètres du script, quelque soit
 //le nombre de séries passé en paramètres
-var recup_all_series = function(callback){
-    var tableau_dynamique = process.argv;
+var recup_all_series = function(tableau_dynamique,callback){
     //On ôte les deux premiers arguments, afin de ne récupérer que les séries
     tableau_dynamique.shift();
     tableau_dynamique.shift();
     if(tableau_dynamique.length != 0){
-        for(var series_name in tableau_dynamique){
+        for(var i=0;i<tableau_dynamique.length;i++){
             var serie_id = "";
-            var url_serie = "http://thetvdb.com/api/GetSeries.php?seriesname="+series_name;
+            var url_serie = "http://thetvdb.com/api/GetSeries.php?seriesname="+tableau_dynamique[i];
+            console.log(url_serie);
             var base_information = "";
-            if(series_name == undefined || series_name == null || series_name == ''){
+            if(tableau_dynamique[i] == undefined || tableau_dynamique[i] == null || tableau_dynamique[i] == ''){
                 console.log("Paramètre non passé ou tableau vide !");
             }
             else{
+                //tab_url_series.push(url_serie);
                 recup_all(url_serie, callback);
             }
+
         }
     }
+    //async.eachSeries(tab_url_series,recup_all,function(err){
+    //    console.log('events all created');
+    //    callback();
+    //});
 }
 
 
@@ -70,6 +73,7 @@ var recup_serie_id = function(res,callback){
                            serie_id = ((((result[Data])[series])[temp])['seriesid'])[temporary];
                            base_information = "http://thetvdb.com/api/54B5B2E411F0FC20/series/"+serie_id+"/all";
                            //Une fois l'URL récupérée, on lance immédiatement la récupération des épisodes
+                           console.log(base_information);
                            recup_all(base_information,callback);
                        }
                    }
@@ -204,9 +208,9 @@ var recup_all_every_24h = function() {
 }
 
 var recup_all_series_every_24h = function() {
-    recup_all_series(function() {
+    recup_all_series(process.argv,function() {
         console.log('La récupération de toutes les séries est terminée');
-        setTimeout(recup_all_series_every_24h, 1000*30);
+        setTimeout(recup_all_series_every_24h, 1000*6);
     });
 }
-recup_all_every_24h();
+recup_all_series_every_24h();

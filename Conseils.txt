@@ -20,8 +20,7 @@ lastModification ==> format ISO String de création de l'évènement
 docType ==> rien
 
 
-Traiter les cas d'erreur (beaucoup de séries, série n'existe pas, etc...)
-Erreur Breaking Bad
+Considérer problème de plusieurs séries
 
 Traiter plusieurs series (array.slice(2,array.length())),besoin d'async
 
