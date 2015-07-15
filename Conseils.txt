@@ -1,0 +1,23 @@
+start ==> date et heure du début de l'évènement
+end ==> date et heure de fin de l'évènement (start + 1) ++> FAIT normalement
+
+place ==> ""
+
+details ==> Overview + nom
+
+description ==> résumé court avec numéro d'épisode
+
+tags ==> calendrier de l'évènement (calendrier des séries ou calendrier par sérioe)
+
+alarms ==> a voir si on le fait
+
+rrule ==> rien
+
+created ==> rien
+
+lastModification ==> format ISO String de création de l'évènement
+
+docType ==> rien
+
+
+FAIT ==> METTRE EN PLACE CREATION OU UPDATE des episodes, s'il y a modification à effectuer ou non
