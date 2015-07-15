@@ -32,3 +32,5 @@ commenter le code, bien
 Faire client pour récupérer les séries
 
 Email + Readme : Description courte de l'application + lien vers le github
+
+récupérer filename dans all.xml et banner dans getSeries
