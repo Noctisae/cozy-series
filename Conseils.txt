@@ -20,4 +20,15 @@ lastModification ==> format ISO String de création de l'évènement
 docType ==> rien
 
 
-FAIT ==> METTRE EN PLACE CREATION OU UPDATE des episodes, s'il y a modification à effectuer ou non
+Traiter les cas d'erreur (beaucoup de séries, série n'existe pas, etc...)
+Erreur Breaking Bad
+
+Traiter plusieurs series (array.slice(2,array.length())),besoin d'async
+
+Améliorer gestion des entiers
+
+commenter le code, bien
+
+Faire client pour récupérer les séries
+
+Email + Readme : Description courte de l'application + lien vers le github

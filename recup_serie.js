@@ -6,39 +6,38 @@ var http = require('http'),
     superagent = require('superagent'),
     Event = require('./build/server/models/event');
 
-var serie = "Game of Thrones";
+    // URL pour vérifier la création des évènements : http://localhost:5984/_utils/database.html?cozy/_all_docs
+    // URL pour récupérer les banières
+    // var banieres = "http://thetvdb.com/api/54B5B2E411F0FC20/series/121361/banners.xml"
+    //URL pour une banière
+    //var image = "http://thetvdb.com/banners/"+bannerPath récupéré dans le fichier banière.xml
 
-var serie_id = "";
+var tableau_dynamique = process.argv;
+tableau_dynamique.shift();
+tableau_dynamique.shift();
+for(var series_name in tableau_dynamique){
+    var serie_id = "";
+    var url_serie = "http://thetvdb.com/api/GetSeries.php?seriesname="+series_name;
+    var base_information = "";
+}
 
-var server_time = "http://thetvdb.com/api/Updates.php?type=none";
-
-var url_serie = "http://thetvdb.com/api/GetSeries.php?seriesname="+serie;
-
-var base_information = "";
-// URL pour vérifier la création des évènements : http://localhost:5984/_utils/database.html?cozy/_all_docs
-// URL pour récupérer les banières
-// var banieres = "http://thetvdb.com/api/54B5B2E411F0FC20/series/121361/banners.xml"
-
-//URL pour une banière
-//var image = "http://thetvdb.com/banners/"+bannerPath récupéré dans le fichier banière.xml
-
-var recup_all = function(url){
+var recup_all = function(url,callback){
     var request = superagent.get(url);
     request.buffer();
     request.type('xml');
     request.end(function(err,res) {
         if(res.ok){
             if (url.indexOf("http://thetvdb.com/api/GetSeries.php") > -1){
-                recup_serie_id(res);
+                recup_serie_id(res,callback);
             }
             else if(url.indexOf("http://thetvdb.com/api/54B5B2E411F0FC20/series") > -1){
-                recup_episodes(res);
+                recup_episodes(res,callback);
             }
         }
     });
 }
 
-var recup_serie_id = function(res){
+var recup_serie_id = function(res,callback){
     var parser = new xml2js.Parser();
     parser.parseString(res.text, function (err, result){
         for(var Data in result){
@@ -50,7 +49,7 @@ var recup_serie_id = function(res){
                            //console.log(((((result[Data])[series])[temp])['id'])[temporary]);
                            serie_id = ((((result[Data])[series])[temp])['seriesid'])[temporary];
                            base_information = "http://thetvdb.com/api/54B5B2E411F0FC20/series/"+serie_id+"/all";
-                           recup_all(base_information);
+                           recup_all(base_information,callback);
                        }
                    }
                }
@@ -59,7 +58,7 @@ var recup_serie_id = function(res){
     });
 }
 
-var recup_episodes = function(res){
+var recup_episodes = function(res,callback){
     var parser = new xml2js.Parser();
     parser.parseString(res.text, function (err, result){
     //On va descendre dans l'arborescence du fichier XML et récupérer les informations pour chaque épisode
@@ -88,6 +87,7 @@ var recup_episodes = function(res){
     }
     async.eachSeries(episodes_details,processor,function(err){
         console.log('events created');
+        callback();
     });
 });
 }
@@ -142,4 +142,15 @@ var recup_episodes_details = function(episodes){
     return rawEvents;
 }
 
-recup_all(url_serie);
+if(serie == undefined || serie == null || serie == ''){
+    console.log("Paramètre non passé !");
+}
+else{
+    var recup_all_every_24h = function() {
+        recup_all(url_serie, function() {
+            console.log('terminé');
+            setTimeout(recup_all_every_24h, 1000*60*60*24);
+        });
+    }
+    recup_all_every_24h();
+}
