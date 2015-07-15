@@ -41,14 +41,11 @@ var download_all = function(file_url){
                             next();
                         });
                     } else {
-                        //console.log(event['lastModification'] + " comparé a " + rawEvent['lastModification']);
                         if(event['lastModification'] != rawEvent['lastModification']){
                             rawEvent['created'] = event['created'];
                             event.updateAttributes(rawEvent,function(err,event){
                                 next();
                             });
-                            //console.log("Changement ! : "+event['lastModification'] + " comparé a " + rawEvent['lastModification']);
-
                         }
                     }
                 });

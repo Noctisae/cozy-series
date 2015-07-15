@@ -1,5 +1,5 @@
 start ==> date et heure du début de l'évènement
-end ==> date et heure de fin de l'évènement (start + 1)
+end ==> date et heure de fin de l'évènement (start + 1) ++> FAIT normalement
 
 place ==> ""
 
@@ -7,7 +7,7 @@ details ==> Overview + nom
 
 description ==> résumé court avec numéro d'épisode
 
-tags ==> calendrier de l'évènement (calendrier série ou calendrier par sérioe)
+tags ==> calendrier de l'évènement (calendrier des séries ou calendrier par sérioe)
 
 alarms ==> a voir si on le fait
 
@@ -20,9 +20,4 @@ lastModification ==> format ISO String de création de l'évènement
 docType ==> rien
 
 
-découper en sous-fonctions la grosse fonction XMLLoad
-BIEN DECOUPER EN SOUS FONCTIONS L'ALGO
-
-UTILISER la librairie superagent ==> npm install superagent
-
-METTRE EN PLACE CREATION OU UPDATE des episodes, s'il y a modification à effectuer ou non
+FAIT ==> METTRE EN PLACE CREATION OU UPDATE des episodes, s'il y a modification à effectuer ou non

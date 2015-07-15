@@ -1,2 +1,0 @@
-Comment lancer l'installation de modules supplémentaires ? (a t'on le droit déja ?)
-    notamment pour Xml2js pour node ou coffee
