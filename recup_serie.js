@@ -102,6 +102,7 @@ var recup_episodes = function(res,seriesName,banner,callback){
         }
         //On extrait de ces épisodes et de leurs détails le tableau de tous les évènements
         var episodes_details = recup_episodes_details(episodes,seriesName,banner);
+        taille_tableau_episodes+= episodes_details.length;
         if(episodes_details.length ==0){
             callback("Une erreur s'est produite lors de la récupération des détails pour les épisodes de la série " + seriesName);
         }
@@ -135,7 +136,7 @@ var recup_episodes = function(res,seriesName,banner,callback){
         }
         //On fait passer chacun des rawEvent dans la fonction processor
         async.eachSeries(episodes_details,processor,function(err){
-            console.log('events created');
+            console.log('events created or updated');
             //Si le nombre d'épisodes traités correspondant au nombre d'épisodes récupérés, on effectue le callback
             if(nombre_episodes_traites == taille_tableau_episodes){
                 nombre_episodes_traites = 0;
@@ -220,7 +221,6 @@ var recup_episodes_details = function(episodes,seriesName,banner){
         //On crée ici l'objet rawEvent contenant les attributs récupérés dans l'épisode XML
         var rawEvent = {"_id": EpisodeID,"start" : start,"end" : end, "place" : "", "details" : details, "description" : seriesName+" : E"+ EpisodeNumber + " S"+EpisodeSeason+", nommé "+EpisodeName, "serie": seriesName, "banner" : banner, "tags" : ["default calendar"], "alarms" : [], "created" : lastModification, "lastModification" : lastModification, "readOnly" : "1", "filename" : filename};
         rawEvents.push(rawEvent);
-        taille_tableau_episodes++;
     }
     return rawEvents;
 }
