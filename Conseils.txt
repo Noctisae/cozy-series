@@ -24,10 +24,6 @@ Considérer problème de plusieurs séries
 
 Traiter plusieurs series (array.slice(2,array.length())),besoin d'async
 
-Améliorer gestion des entiers
-
 Faire client pour récupérer les séries
 
 Email + Readme : Description courte de l'application + lien vers le github
-
-récupérer filename dans all.xml et banner dans getSeries

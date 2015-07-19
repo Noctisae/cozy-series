@@ -58,7 +58,19 @@ module.exports = Event = cozydb.getModel('Event', {
   readOnly: {
   type: String,
   "default": "0"
-  }
+  },
+  filename: {
+    type: String,
+    "default": ""
+  },
+  banner: {
+    type: String,
+    "default": ""
+  },
+  serie: {
+    type: String,
+    "default": ""
+    }
 });
 
 Event.dateFormat = 'YYYY-MM-DD';
