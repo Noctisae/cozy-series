@@ -20,10 +20,6 @@ lastModification ==> format ISO String de création de l'évènement
 docType ==> rien
 
 
-Considérer problème de plusieurs séries
-
-Traiter plusieurs series (array.slice(2,array.length())),besoin d'async
-
 Faire client pour récupérer les séries
 
 Email + Readme : Description courte de l'application + lien vers le github

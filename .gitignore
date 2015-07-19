@@ -12,6 +12,11 @@ pids
 logs
 results
 client/public
+Conseils.txt
+Transformation XML-event Cozy.txt
+Vagrantfile
+exemple_sortie.json
+.vagrant
 
 deploy_config.coffee
 

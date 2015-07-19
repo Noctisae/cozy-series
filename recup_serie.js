@@ -16,7 +16,7 @@ var SeriesName = "";
 var serie_id = "";
 var url_serie = "http://thetvdb.com/api/GetSeries.php?seriesname="+process.argv[2];
 var base_information = "";
-var nombre_episodes = 0;
+var nombre_episodes_traites = 0;
 var taille_tableau_episodes =0;
 
 //On ôte les deux premiers arguments de la ligne de commande afin de ne garder que les séries
@@ -40,11 +40,9 @@ var recup_all = function(url,callback,seriesName,banner){
     request.end(function(err,res) {
         if(res.ok){
             if (url.indexOf("http://thetvdb.com/api/GetSeries.php") > -1){
-                console.log("recupération de l'ID de la série");
                 recup_serie_id(res,callback);
             }
             else if(url.indexOf("http://thetvdb.com/api/54B5B2E411F0FC20/series") > -1){
-                console.log("Récupération des épisodes de la série");
                 recup_episodes(res,seriesName,banner,callback);
             }
         }
@@ -64,16 +62,15 @@ var recup_serie_id = function(res,callback){
                if (series=='Series'){
                    for(var temp in (result[Data])[series]){
                        for(var temporary in (((result[Data])[series])[temp])['SeriesName']){
-                           var seriesName = ((((result[Data])[series])[temp])['SeriesName'])[temporary];
+                           seriesName = ((((result[Data])[series])[temp])['SeriesName'])[temporary];
                        }
                        for(var temporary in (((result[Data])[series])[temp])['banner']){
-                           var banner = ((((result[Data])[series])[temp])['banner'])[temporary];
+                           banner = ((((result[Data])[series])[temp])['banner'])[temporary];
                        }
                        for(var temporary in (((result[Data])[series])[temp])['seriesid']){
                            serie_id = ((((result[Data])[series])[temp])['seriesid'])[temporary];
                            base_information = "http://thetvdb.com/api/54B5B2E411F0FC20/series/"+serie_id+"/all";
                            //Une fois l'URL récupérée, on lance immédiatement la récupération des épisodes
-                           console.log(base_information);
                            recup_all(base_information,callback,seriesName,banner);
                        }
                    }
@@ -106,7 +103,7 @@ var recup_episodes = function(res,seriesName,banner,callback){
                     Event.create(rawEvent, function(err, event) {
                         next();
                     });
-                    nombre_episodes++;
+                    nombre_episodes_traites++;
                 }//Sinon, on le met à jour si les dates de dernière modification ne correspondent pas
                 else {
                     if(event['lastModification'] != rawEvent['lastModification']){
@@ -116,7 +113,7 @@ var recup_episodes = function(res,seriesName,banner,callback){
                         event.updateAttributes(rawEvent,function(err,event){
                             next();
                         });
-                        nombre_episodes++;
+                        nombre_episodes_traites++;
                     }
                 }
             });
@@ -124,8 +121,9 @@ var recup_episodes = function(res,seriesName,banner,callback){
         //On fait passer chacun des rawEvent dans la fonction processor
         async.eachSeries(episodes_details,processor,function(err){
             console.log('events created');
-            if(nombre_episodes == taille_tableau_episodes){
-                nombre_episodes = 0;
+            //Si le nombre d'épisodes traités correspondant au nombre d'épisodes récupérés, on effectue le callback
+            if(nombre_episodes_traites == taille_tableau_episodes){
+                nombre_episodes_traites = 0;
                 taille_tableau_episodes = 0;
                 callback();
             }
@@ -212,23 +210,20 @@ var recup_episodes_details = function(episodes,seriesName,banner){
     return rawEvents;
 }
 
-//Début du programme, cette fonction relance le script toutes les 24 h après un premier appel
-var recup_all_every_24h = function() {
-    recup_all(url_serie,function() {
-        console.log('La récupération de la série est terminée !');
-        setTimeout(recup_all_every_24h, 1000*10);
-    });
-}
-
+//Fonction chargée d'effectuer la récupération de toutes les séries précisées en argument du script.
+//Elle se relance automatiquement toutes les 24h une fois la récupération terminée.
 var recup_all_series_every_24h = function() {
-    console.log("rentrée dans la fonction 24h");
     var tab = process.argv;
-    for(var i=0;i<tab.length;i++){
-        console.log("rentrée dans la boucle");
-        recup_all("http://thetvdb.com/api/GetSeries.php?seriesname="+tab[i],function() {
-            console.log('La récupération de toutes les séries est terminée,Attente de 10 sec');
-            setTimeout(recup_all_series_every_24h, 1000*60*60*24);
-        });
+    if(tab.length > 2){
+        for(var i=0;i<tab.length;i++){
+            recup_all("http://thetvdb.com/api/GetSeries.php?seriesname="+tab[i],function() {
+                console.log('La récupération de toutes les séries est terminée');
+                setTimeout(recup_all_series_every_24h, 1000*60*60*24);
+            });
+        }
+    }
+    else{
+        console.log('Veuillez préciser les séries à récupérer. (Ex: node recup_serie.js "Game of Thrones" "The Walking Dead")');
     }
 }
 recup_all_series_every_24h();
