@@ -46,6 +46,9 @@ var recup_all = function(url,callback,seriesName,banner){
                 recup_episodes(res,seriesName,banner,callback);
             }
         }
+        else{
+            callback("Une erreur s'est produite lors de la récupération des documents XML sur thetvdb.com");
+        }
     });
 }
 
@@ -69,6 +72,9 @@ var recup_serie_id = function(res,callback){
                        }
                        for(var temporary in (((result[Data])[series])[temp])['seriesid']){
                            serie_id = ((((result[Data])[series])[temp])['seriesid'])[temporary];
+                           if(serie_id == ""){
+                               callback("Une erreur s'est produite lors de la récupération de l'ID de la série "+ seriesName);
+                           }
                            base_information = "http://thetvdb.com/api/54B5B2E411F0FC20/series/"+serie_id+"/all";
                            //Une fois l'URL récupérée, on lance immédiatement la récupération des épisodes
                            recup_all(base_information,callback,seriesName,banner);
@@ -91,16 +97,25 @@ var recup_episodes = function(res,seriesName,banner,callback){
     parser.parseString(res.text, function (err, result){
         //On récupére le tableau de tous les épisodes
         var episodes = recup_episodes_tableau(result);
+        if(episodes.length == 0){
+            callback("Une erreur s'est produite lors de la récupération des épisodes pour la série "+seriesName);
+        }
         //On extrait de ces épisodes et de leurs détails le tableau de tous les évènements
         var episodes_details = recup_episodes_details(episodes,seriesName,banner);
+        if(episodes_details.length ==0){
+            callback("Une erreur s'est produite lors de la récupération des détails pour les épisodes de la série " + seriesName);
+        }
         //Fonction chargée de vérifier si l'évènement existe ou non, et de le mettre a jour si besoin est
         var processor = function(rawEvent, next) {
             //On recherche l'évènement via son ID dans la base
             Event.find(rawEvent['_id'], function(err, event) {
-                //S'il y a erreur ou s'il n'est pas trouvé, on le crée
-                if (err || !event) {
-                    console.log("event created");
+                if (err){
+                    console.log(err);
+                }
+                //S'il n'est pas trouvé, on le crée
+                else if(!event) {
                     Event.create(rawEvent, function(err, event) {
+                        console.log("event created");
                         next();
                     });
                     nombre_episodes_traites++;
@@ -214,9 +229,12 @@ var recup_episodes_details = function(episodes,seriesName,banner){
 //Elle se relance automatiquement toutes les 24h une fois la récupération terminée.
 var recup_all_series_every_24h = function() {
     var tab = process.argv;
-    if(tab.length > 2){
+    if(tab.length > 0){
         for(var i=0;i<tab.length;i++){
-            recup_all("http://thetvdb.com/api/GetSeries.php?seriesname="+tab[i],function() {
+            recup_all("http://thetvdb.com/api/GetSeries.php?seriesname="+tab[i],function(err) {
+                if(err){
+                    console.log(err);
+                }
                 console.log('La récupération de toutes les séries est terminée');
                 setTimeout(recup_all_series_every_24h, 1000*60*60*24);
             });

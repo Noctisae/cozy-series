@@ -23,8 +23,8 @@ module.exports = Event = cozydb.getModel 'Event',
     lastModification: type: String
     readOnly     : type: String, default: "0"
     filename    : type: String, default: ""
-    banner      : type: String, default:""
-    serie       : type: String, default:""
+    banner      : type: String, default: ""
+    serie       : type: String, default: ""
 
 # 'start' and 'end' use those format,
 # According to allDay or rrules.
