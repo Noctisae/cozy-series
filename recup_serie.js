@@ -235,8 +235,10 @@ var recup_all_series_every_24h = function() {
                 if(err){
                     console.log(err);
                 }
-                console.log('La récupération de toutes les séries est terminée');
-                setTimeout(recup_all_series_every_24h, 1000*60*60*24);
+                else{
+                    console.log('La récupération de toutes les séries est terminée');
+                    setTimeout(recup_all_series_every_24h, 1000*60*60*24);
+                }
             });
         }
     }
